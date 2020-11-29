@@ -1,0 +1,5 @@
+__pycache__/
+.spotify-cache/
+.vscode/
+.env
+secrets.c
