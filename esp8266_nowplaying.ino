@@ -69,11 +69,6 @@ void setup() {
     display.begin(32);  // 64x64 display
     display.setBrightness(20);
     display.clearDisplay();
-    display.setCursor(0, 2);
-    display.setTextColor(display.color565(255, 255, 255));
-    display.print("hello world");
-    display.showBuffer();
-    display_update_enable(true);
 
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
@@ -85,8 +80,6 @@ void setup() {
     lcd.print("Wifi connected");
     lcd.setCursor(0, 1);
     lcd.print(ssid);
-
-    update_display_with_buf(IMAGE_MODE);
 }
 
 void loop() {
@@ -129,22 +122,24 @@ void loop() {
     response = http.GET();
 
     if (response == HTTP_CODE_OK) {
-        display.clearDisplay();
         int len = http.getSize();
-
         memcpy(buf, http.getString().c_str(),
                3 * DISPLAY_WIDTH * DISPLAY_HEIGHT);
 
+        display.clearDisplay();
         if (playing) {
             update_display_with_buf(IMAGE_MODE);
         }
     } else {
+        display.clearDisplay();
         lcd.clear();
         lcd.setCursor(0, 0);
         // debug when you forget to expose your server
         lcd.print(http.errorToString(response));
         lcd.setCursor(0, 1);
+        lcd.print("try in ");
         lcd.print(remaining_time);
+        lcd.print("ms");
     }
 
     // delay until time remaining is up, then check for another update
