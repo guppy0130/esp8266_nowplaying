@@ -101,25 +101,25 @@ void loop() {
 
     if (response == HTTP_CODE_OK) {
         String payload = http.getString();
-        Serial.println(payload);
-        String track_name = payload.substring(0, payload.indexOf("\n"));
-        playing = strcmp(track_name.c_str(), "nothing playing");  // 0 if match
+        // figure out where the newlines are
+        int first_newline = payload.indexOf("\n");
+        int second_newline = payload.indexOf("\n", first_newline + 1);
+
+        String track_name = payload.substring(0, first_newline);
+        playing = strcmp(track_name.c_str(), "nothing playing"); // 0 if match
+
         lcd.clear();
         lcd.setCursor(0, 0);
-        lcd.print(track_name);
-        lcd.setCursor(0, 1);
+        lcd.print(track_name); // even if not playing, print
         // + 1 offset because indexing
-        String artist = payload.substring(
-            payload.indexOf("\n") + 1,
-            payload.indexOf(
-                "\n", payload.indexOf(track_name) + track_name.length() + 1));
+        String artist = payload.substring(first_newline + 1, second_newline);
+        lcd.setCursor(0, 1);
+        lcd.print("                "); // clear the bottom row
+        lcd.setCursor(0, 1);
         lcd.print(artist);
         // songs can be very long, and this is in ms anyways, so not int
         long server_suggested_time =
-            payload
-                .substring(payload.indexOf(
-                    "\n", payload.indexOf(artist) + artist.length()))
-                .toInt();
+            payload.substring(second_newline + 1).toInt();
         // we don't want to spam the server
         remaining_time = std::max(remaining_time, server_suggested_time);
     }
