@@ -1,5 +1,52 @@
+# python + proj-specific stuff
 __pycache__/
 .spotify-cache/
 .vscode/
 .env
 secrets.c
+
+# 3d-printing stuff
+# json is scad extra data
+3d-prints/*.json
+# stl is printable gcode
+3d-prints/*.stl
+
+# don't really care about cache/rescue
+pcbs/*-cache.*
+pcbs/*-rescue.*
+
+# no zipped gerbers (artifact)
+pcbs/gerbers/*.zip
+
+# For PCBs designed using KiCad: http://www.kicad-pcb.org/
+# Format documentation: http://kicad-pcb.org/help/file-formats/
+
+# Temporary files
+*.000
+*.bak
+*.bck
+*.kicad_pcb-bak
+*.kicad_sch-bak
+*.kicad_prl
+*.sch-bak
+*~
+_autosave-*
+*.tmp
+*-save.pro
+*-save.kicad_pcb
+fp-info-cache
+
+# Netlist files (exported from Eeschema)
+*.net
+
+# Autorouter files (exported from Pcbnew)
+*.dsn
+*.ses
+
+# Exported BOM files
+*.xml
+*.csv
+
+# tables
+sym-lib-table
+fp-lib-table

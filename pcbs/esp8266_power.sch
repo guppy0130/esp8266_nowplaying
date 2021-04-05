@@ -1,0 +1,289 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L Connector:Conn_01x04_Male J1
+U 1 1 606EB2C4
+P 3350 2300
+F 0 "J1" H 3200 2350 50  0000 C CNN
+F 1 "Power" H 3200 2250 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 3350 2300 50  0001 C CNN
+F 3 "~" H 3350 2300 50  0001 C CNN
+	1    3350 2300
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0103
+U 1 1 606FC1CC
+P 4250 2400
+F 0 "#PWR0103" H 4250 2150 50  0001 C CNN
+F 1 "GND" V 4255 2272 50  0000 R CNN
+F 2 "" H 4250 2400 50  0001 C CNN
+F 3 "" H 4250 2400 50  0001 C CNN
+	1    4250 2400
+	0    1    1    0   
+$EndComp
+Text Label 5850 3700 0    50   ~ 0
+LAT
+Text Label 5850 3600 0    50   ~ 0
+A
+Text Label 5850 3500 0    50   ~ 0
+B
+Text Label 5850 3400 0    50   ~ 0
+E
+Text Label 5850 3300 0    50   ~ 0
+OE
+Text Label 5850 3000 0    50   ~ 0
+CLK
+Text Label 5850 2900 0    50   ~ 0
+D
+Entry Wire Line
+	5950 2800 5850 2700
+Entry Wire Line
+	5950 2900 5850 2800
+Entry Wire Line
+	5950 3000 5850 2900
+Entry Wire Line
+	5950 3100 5850 3000
+Entry Wire Line
+	5950 3400 5850 3300
+Entry Wire Line
+	5950 3500 5850 3400
+Entry Wire Line
+	5950 3600 5850 3500
+Entry Wire Line
+	5950 3700 5850 3600
+Entry Wire Line
+	5950 3800 5850 3700
+Text Label 5850 2600 0    50   ~ 0
+SCL
+Text Label 5850 2500 0    50   ~ 0
+SDA
+$Comp
+L Connector:Conn_01x04_Male J2
+U 1 1 606FE047
+P 6650 2700
+F 0 "J2" H 6622 2582 50  0000 R CNN
+F 1 "LCD Module w/ Backpack" H 6622 2673 50  0000 R CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 6650 2700 50  0001 C CNN
+F 3 "~" H 6650 2700 50  0001 C CNN
+	1    6650 2700
+	-1   0    0    1   
+$EndComp
+Text Label 6450 2600 2    50   ~ 0
+SDA
+Text Label 6450 2500 2    50   ~ 0
+SCL
+Entry Wire Line
+	6350 2500 6450 2600
+Entry Wire Line
+	6350 2400 6450 2500
+Wire Bus Line
+	5950 2600 5950 2700
+Text Label 5850 2800 0    50   ~ 0
+R1
+Text Label 5850 2700 0    50   ~ 0
+C
+Entry Wire Line
+	5950 2700 5850 2600
+Entry Wire Line
+	5950 2600 5850 2500
+NoConn ~ 4250 2500
+NoConn ~ 4250 2600
+NoConn ~ 4250 2700
+NoConn ~ 4250 2900
+NoConn ~ 4250 3000
+NoConn ~ 4250 3100
+NoConn ~ 4250 3200
+NoConn ~ 4250 3300
+NoConn ~ 4250 3400
+NoConn ~ 4250 3500
+NoConn ~ 4250 3600
+NoConn ~ 4250 3700
+NoConn ~ 5850 3200
+$Comp
+L power:PWR_FLAG #FLG0101
+U 1 1 606D2C2F
+P 3550 2200
+F 0 "#FLG0101" H 3550 2275 50  0001 C CNN
+F 1 "PWR_FLAG" H 3550 2373 50  0000 C CNN
+F 2 "" H 3550 2200 50  0001 C CNN
+F 3 "~" H 3550 2200 50  0001 C CNN
+	1    3550 2200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3550 2200 3550 2300
+Connection ~ 3550 2200
+Wire Wire Line
+	3550 2400 3550 2500
+$Comp
+L power:PWR_FLAG #FLG0102
+U 1 1 606D542B
+P 3550 2500
+F 0 "#FLG0102" H 3550 2575 50  0001 C CNN
+F 1 "PWR_FLAG" H 3550 2673 50  0000 C CNN
+F 2 "" H 3550 2500 50  0001 C CNN
+F 3 "~" H 3550 2500 50  0001 C CNN
+	1    3550 2500
+	-1   0    0    1   
+$EndComp
+Connection ~ 3550 2500
+$Comp
+L power:+5V #PWR0101
+U 1 1 606D21AC
+P 4250 2300
+F 0 "#PWR0101" H 4250 2150 50  0001 C CNN
+F 1 "+5V" V 4265 2428 50  0000 L CNN
+F 2 "" H 4250 2300 50  0001 C CNN
+F 3 "" H 4250 2300 50  0001 C CNN
+	1    4250 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:+5V #PWR0102
+U 1 1 606D8DB7
+P 3550 2400
+F 0 "#PWR0102" H 3550 2250 50  0001 C CNN
+F 1 "+5V" V 3565 2528 50  0000 L CNN
+F 2 "" H 3550 2400 50  0001 C CNN
+F 3 "" H 3550 2400 50  0001 C CNN
+	1    3550 2400
+	0    1    1    0   
+$EndComp
+Connection ~ 3550 2400
+$Comp
+L power:GND #PWR0104
+U 1 1 606D95D2
+P 3550 2300
+F 0 "#PWR0104" H 3550 2050 50  0001 C CNN
+F 1 "GND" V 3555 2172 50  0000 R CNN
+F 2 "" H 3550 2300 50  0001 C CNN
+F 3 "" H 3550 2300 50  0001 C CNN
+	1    3550 2300
+	0    -1   -1   0   
+$EndComp
+Connection ~ 3550 2300
+$Comp
+L esp8266_power-rescue:NodeMCU_1.0_(ESP-12E)-ESP8266 U1
+U 1 1 606EEFD6
+P 5050 3000
+F 0 "U1" H 5050 1913 60  0000 C CNN
+F 1 "NodeMCU_1.0_(ESP-12E)" H 5050 2019 60  0000 C CNN
+F 2 "ESP8266:NodeMCU1.0(12-E)" H 4450 2150 60  0001 C CNN
+F 3 "" H 4450 2150 60  0000 C CNN
+	1    5050 3000
+	1    0    0    1   
+$EndComp
+NoConn ~ 5850 3100
+NoConn ~ 5850 2400
+NoConn ~ 5850 2300
+$Comp
+L power:+5V #PWR0105
+U 1 1 606DBA68
+P 6450 2700
+F 0 "#PWR0105" H 6450 2550 50  0001 C CNN
+F 1 "+5V" V 6465 2828 50  0000 L CNN
+F 2 "" H 6450 2700 50  0001 C CNN
+F 3 "" H 6450 2700 50  0001 C CNN
+	1    6450 2700
+	0    -1   -1   0   
+$EndComp
+NoConn ~ 4250 2800
+Wire Bus Line
+	5950 2600 6450 2600
+Wire Bus Line
+	6450 2600 6450 2500
+Wire Bus Line
+	5950 2800 5950 3900
+Wire Bus Line
+	6800 3400 6800 3900
+Wire Bus Line
+	6100 3400 6100 3900
+Connection ~ 6100 3900
+Wire Bus Line
+	6800 3900 6100 3900
+Text Label 6700 3300 0    50   ~ 0
+E
+Text Label 6700 3400 0    50   ~ 0
+B
+Text Label 6700 3500 0    50   ~ 0
+D
+Text Label 6700 3600 0    50   ~ 0
+LAT
+$Comp
+L power:GND #PWR0110
+U 1 1 607465D6
+P 6700 3700
+F 0 "#PWR0110" H 6700 3450 50  0001 C CNN
+F 1 "GND" H 6705 3527 50  0000 C CNN
+F 2 "" H 6700 3700 50  0001 C CNN
+F 3 "" H 6700 3700 50  0001 C CNN
+	1    6700 3700
+	1    0    0    -1  
+$EndComp
+Entry Wire Line
+	6700 3400 6800 3500
+Entry Wire Line
+	6700 3500 6800 3600
+Entry Wire Line
+	6700 3600 6800 3700
+Entry Wire Line
+	6700 3300 6800 3400
+Text Label 6200 3400 2    50   ~ 0
+A
+Entry Wire Line
+	6100 3400 6200 3300
+Text Label 6200 3300 2    50   ~ 0
+R1
+Entry Wire Line
+	6100 3500 6200 3400
+Entry Wire Line
+	6100 3800 6200 3700
+Entry Wire Line
+	6100 3700 6200 3600
+Entry Wire Line
+	6100 3600 6200 3500
+Text Label 6200 3500 2    50   ~ 0
+C
+Text Label 6200 3600 2    50   ~ 0
+CLK
+Text Label 6200 3700 2    50   ~ 0
+OE
+Wire Bus Line
+	6100 3900 5950 3900
+$Comp
+L power:GND #PWR0109
+U 1 1 60704DE8
+P 6450 2800
+F 0 "#PWR0109" H 6450 2550 50  0001 C CNN
+F 1 "GND" V 6455 2672 50  0000 R CNN
+F 2 "" H 6450 2800 50  0001 C CNN
+F 3 "" H 6450 2800 50  0001 C CNN
+	1    6450 2800
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x05_Counter_Clockwise J3
+U 1 1 60701E96
+P 6400 3500
+F 0 "J3" H 6450 3917 50  0000 C CNN
+F 1 "LED Matrix" H 6450 3826 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x05_P2.54mm_Vertical" H 6400 3500 50  0001 C CNN
+F 3 "~" H 6400 3500 50  0001 C CNN
+	1    6400 3500
+	1    0    0    -1  
+$EndComp
+$EndSCHEMATC

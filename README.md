@@ -15,6 +15,12 @@
 2. You'll need to add a backpack to the LCD display so you can go from a large number of IO pins to 2 + VCC + GND. Connect those two to GPIO 1 and 3. (after flashing, if you need those pins, I guess. I'm using a development board so a lot of things is just plug and play)
 3. Tie all grounds together to the power supply. Very important. I spent a lot of time trying to figure out why there was flickering and random pixels lit up so you don't have to.
 
+### 3D prints
+
+* Stuff in `pcbs` is a board that simplifies connecting the LCD, LED matrix, and ESP8266.
+  * Stuff in `pcbs/gerbers` is what you can provide to your favorite PCB fab to get a PCB from them.
+* Stuff in `3d-prints` are modifiable designs to print for mounting the matrix.
+
 ### SW Setup
 
 #### Server
