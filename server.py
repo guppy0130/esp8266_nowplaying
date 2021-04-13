@@ -1,13 +1,21 @@
 from flask import Flask, url_for, request, redirect, Response
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from dotenv import load_dotenv
 import os
+from pathlib import Path
+import shutil
 import requests
 from PIL import Image
 from io import BytesIO
 
-load_dotenv()  # get vars
+# attempt to use dotenv in dev mode
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()  # get vars
+except ImportError:
+    pass
+
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_SCOPE = "user-read-currently-playing"
@@ -19,13 +27,14 @@ DEFAULT_WAIT_TIME = 1000 * 3  # the server can suggest a default update time
 app = Flask(__name__)
 
 # setup for spotipy
-caches_folder = "./.spotify-cache"
-if not os.path.exists(caches_folder):
-    os.makedirs(caches_folder)
+caches_folder = Path("./.spotify-cache").resolve()
+if not caches_folder.is_dir():
+    caches_folder.mkdir(parents=True, exist_ok=True)
 
 
-def session_cache_path(user):
-    return f"{caches_folder}/{user}"
+def session_cache_path(user: str) -> Path:
+    cache_file = caches_folder / user
+    return cache_file
 
 
 def image_to_565(url):
@@ -256,7 +265,7 @@ def get_art_endpoint(user):
     return Response(
         generate(),
         mimetype="text/plain",
-        headers={"Content-Length": len(image_bytes)},
+        headers={"Content-Length": str(len(image_bytes))},
     )
 
 
@@ -270,7 +279,7 @@ def logout(user):
     Returns:
         redirect: if logout successful, redirect to `/`
     """
-    os.remove(session_cache_path(user))
+    shutil.rmtree(session_cache_path(user))
     return redirect("/")
 
 
