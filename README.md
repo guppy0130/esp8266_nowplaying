@@ -20,8 +20,8 @@ pip install -e .
 hypercorn server:app --bind 0.0.0.0:3000 --reload --access-logfile - --log-file -
 ```
 
-You should auth with `/user/<your spotify username>` first before letting the
-client hit this endpoint.
+You should auth with `/authorize/<your spotify username>` first before letting
+the client hit `/user/<your spotify username>`.
 
 Refer to `/docs` for the API docs.
 

@@ -65,6 +65,7 @@ def spotify_obj(user: str, base_url: URL):
         cache_handler=cache_handler,
         state=user,
         show_dialog=True,
+        open_browser=False
     )
     spotify = spotipy.Spotify(auth_manager=auth_manager)
     return spotify, auth_manager
@@ -72,7 +73,16 @@ def spotify_obj(user: str, base_url: URL):
 
 @app.get("/")
 def index():
-    return "Please auth at /user/your spotify username"
+    return "Please auth at /authorize/<your spotify username>"
+
+@app.get("/authorize/{user}/")
+def auth(
+    user: str,
+    request: Request,
+):
+    spotify, auth_manager = spotify_obj(user, base_url=request.base_url)
+    if not auth_manager.validate_token(auth_manager.get_cached_token()):
+        return RedirectResponse(url=auth_manager.get_authorize_url())
 
 
 @app.get("/user/{user}/")
@@ -179,23 +189,23 @@ def get_art(
 @app.get("/user/{user}/logout")
 def logout(user: str):
     """Logs a user out by deleting spotify auth data from the server"""
-    shutil.rmtree(session_cache_path(user))
+    session_cache_path(user).unlink(missing_ok=True)
     return RedirectResponse("/")
 
 
 @app.get("/callback")
 def callback(
-    user: Annotated[str, Query()],
+    state: Annotated[str, Query()],
     code: Annotated[str, Query()],
     request: Request,
 ):
     """Save authorization code from user approval"""
 
     # trade the code for an access token and save the token to disk
-    _, auth_manager = spotify_obj(user, base_url=request.base_url)
+    _, auth_manager = spotify_obj(user=state, base_url=request.base_url)
     if code:
         auth_manager.get_access_token(code)
 
     # redirect back to the main user URL
     # TODO: redirect to where the user initially tried to go to
-    return RedirectResponse(app.url_path_for("user", user=user))
+    return RedirectResponse(app.url_path_for("user", user=state))

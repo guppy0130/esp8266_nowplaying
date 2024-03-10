@@ -14,13 +14,9 @@ COPY pyproject.toml .
 COPY README.md .
 COPY server.py .
 
-RUN --mount=source=.git,target=.git,type=bind \
-  ls -lah
-
 # mount in local .git for setuptools_scm:
 # https://github.com/pypa/setuptools_scm/issues/77#issuecomment-844927695
 RUN --mount=source=.git,target=.git,type=bind \
   pip install --no-cache-dir --no-color .
-
 
 CMD ["hypercorn", "server:app", "--bind", "0.0.0.0:3000", "--access-logfile", "-", "--log-file", "-"]
