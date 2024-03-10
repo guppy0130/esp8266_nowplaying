@@ -25,6 +25,10 @@ client hit this endpoint.
 
 Refer to `/docs` for the API docs.
 
+```sh
+docker build . -t esp8266-nowplaying:$(python -m setuptools_scm --strip-dev)
+```
+
 ## Client
 
 Currently connects to `/user/<user>/art` for just the album art. Attach another
