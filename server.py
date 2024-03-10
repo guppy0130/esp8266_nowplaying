@@ -1,35 +1,43 @@
-from flask import Flask, url_for, request, redirect, Response
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+import importlib.metadata
 import os
-from pathlib import Path
 import shutil
-import requests
-from PIL import Image
+from base64 import b64encode
 from io import BytesIO
+from pathlib import Path
+from typing import Annotated
+from urllib.parse import urljoin
 
-# attempt to use dotenv in dev mode
-try:
-    from dotenv import load_dotenv
-
-    load_dotenv()  # get vars
-except ImportError:
-    pass
+import requests
+import spotipy
+from fastapi import FastAPI, Query, Request, Response
+from fastapi.responses import RedirectResponse
+from PIL import Image, ImageEnhance
+from spotipy.cache_handler import CacheFileHandler
+from spotipy.oauth2 import SpotifyOAuth
+from starlette.datastructures import URL
+from typing_extensions import TypedDict
 
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 SPOTIFY_SCOPE = "user-read-currently-playing"
-IMG_DIM = 64
-DEFAULT_IMAGE_MODE = os.getenv("IMAGE_MODE", default=888)
+IMG_WIDTH = 64
 DEFAULT_WAIT_TIME = 1000 * 3  # the server can suggest a default update time
 
 # expose a webserver
-app = Flask(__name__)
+metadata = importlib.metadata.metadata("esp8266-nowplaying").json
+app = FastAPI(
+    title=metadata["name"],  # type: ignore
+    version=metadata["version"],  # type: ignore
+    summary=metadata["summary"],  # type: ignore
+)
 
 # setup for spotipy
-caches_folder = Path("./.spotify-cache").resolve()
-if not caches_folder.is_dir():
-    caches_folder.mkdir(parents=True, exist_ok=True)
+caches_folder = (
+    Path(os.getenv("SPOTIFY_TOKEN_CACHE_DIR", "./.spotify-cache"))
+    .expanduser()
+    .resolve()
+)
+caches_folder.mkdir(parents=True, exist_ok=True)
 
 
 def session_cache_path(user: str) -> Path:
@@ -37,69 +45,24 @@ def session_cache_path(user: str) -> Path:
     return cache_file
 
 
-def image_to_565(url):
-    """Converts an image at `url` to a bytes in 565 format
-
-    Args:
-        url (str): URL to image to render
-
-    Returns:
-        list: bytes
-        int: 565
+def image_fetch(url: str) -> Image.Image:
     """
-    try:
-        response = requests.get(url)
-        image = Image.open(BytesIO(response.content)).convert("RGB")
-        # you'll have to list() to get the pixels themselves.
-        px_list = list(image.getdata())
-        hex_list = []
-        for px in px_list:
-            # yoinked from https://gist.github.com/hidsh/7065820
-            # shift it right 2-3b to get the highest bits that we can mask
-            # the highest bits = most obvious colors
-            # this way, we map down from 8b color to 5-6b
-            r = (px[0] >> 3) & 0b00011111
-            g = (px[1] >> 2) & 0b00111111
-            b = (px[2] >> 3) & 0b00011111
-            # then, the value is rrrrrggggggbbbbb
-            result = (r << 11) + (g << 5) + b
-            # then you should split in half, because you have a short
-            result_high = result >> 8 & 0b11111111
-            result_low = result & 0b11111111
-            hex_list.append(result_high)
-            hex_list.append(result_low)
-        return hex_list, 565
-    except Exception:
-        return [0] * (2 * IMG_DIM * IMG_DIM), 565
-
-
-def image_to_888(url):
-    """Converts an image at `url` to a bytes in 888 format
-
-    Args:
-        url (str): URL to image to render
-
-    Returns:
-        list: bytes
-        int: 888
+    Fetches image at ``url``, returns pixel values in ``mode``
     """
-    try:
-        response = requests.get(url)
-        image = Image.open(BytesIO(response.content)).convert("RGB")
-        # you'll have to list() to get the pixels themselves.
-        px_list = list(image.getdata())
-        return [item for sublist in px_list for item in sublist], 888
-    except Exception:
-        return [0] * (3 * IMG_DIM * IMG_DIM), 888
+    response = requests.get(url)
+    image_buffer = BytesIO(response.content)
+    # https://pillow.readthedocs.io/en/stable/handbook/concepts.html#modes
+    return Image.open(image_buffer).convert("RGB")
 
 
-def spotify_obj(user):
+def spotify_obj(user: str, base_url: URL):
+    cache_handler = CacheFileHandler(cache_path=session_cache_path(user))
     auth_manager = SpotifyOAuth(
-        SPOTIFY_CLIENT_ID,
-        SPOTIFY_CLIENT_SECRET,
-        url_for("callback", _external=True),
+        client_id=SPOTIFY_CLIENT_ID,
+        client_secret=SPOTIFY_CLIENT_SECRET,
+        redirect_uri=urljoin(str(base_url), "callback"),
         scope=SPOTIFY_SCOPE,
-        cache_path=session_cache_path(user),
+        cache_handler=cache_handler,
         state=user,
         show_dialog=True,
     )
@@ -107,81 +70,47 @@ def spotify_obj(user):
     return spotify, auth_manager
 
 
-@app.route("/")
+@app.get("/")
 def index():
     return "Please auth at /user/your spotify username"
 
 
-# connect to the spotify api
-@app.route("/user/<user>/")
-def auth(user):
+@app.get("/user/{user}/")
+def user(
+    user: str,
+    request: Request,
+):
     """Main endpoint. If a user has previously authed with this, it will be
-    available to world for use
-
-    Args:
-        user (str): User
-
-    Returns:
-        Response: the track, artist, and image_bytes with Content-Type:
-        text/plain
-    """
+    available for use"""
     # there's a max of 10-20 req/s?
     # https://stackoverflow.com/questions/30548073/spotify-web-api-rate-limits#comment75952503_30557896
 
-    # get the spotify/auth_manager objects
-    spotify, auth_manager = spotify_obj(user)
-    # handle incoming new auths
-    if request.args.get("spotify_code"):
-        # pickup spotify code and set
-        auth_manager.get_access_token(request.args.get("spotify_code"))
-
     # return the artist, track, playtime remaining, and album art pixels
-    track_name, artists, remaining_time = get_tracks(user)
-    # hex() doesn't pad, so return 0x{result} padded len 4
-    # https://stackoverflow.com/a/52213104
-    # hex_list.append(f"0x{result:04X}")
-    incoming_mode = int(request.args.get("mode", default=DEFAULT_IMAGE_MODE))
-    image_bytes, mode = get_album_art(user, mode=incoming_mode)
-    debug = bool(request.args.get("debug", default=False))
-    # how to render bytes.
-    if mode == 888 or not debug:
-        # if it's 888, then 0xRR, 0xGG, 0xBB
-        padding = 2
-    else:
-        # if it's 565, then 0xRMMB where M is mixed
-        # this will be what the corresponding sketch will assemble
-        padding = 4
-        hex_list = []
-        # unsplit
-        for i in range(0, len(image_bytes), 2):
-            num = (image_bytes[i] << 8) + image_bytes[i + 1]
-            hex_list.append(num)
-        image_bytes = hex_list
-    image_bytes = map(lambda result: f"0x{result:0{padding}X}", image_bytes)
+    track_info = get_tracks(user, request=request)
+    image_bytes = _art_helper(user, request=request)
 
-    return_string = (
-        f"{track_name}\n{artists}\n{remaining_time}\n{', '.join(image_bytes)}"
-    )
-    return Response(return_string, content_type="text/plain; charset=utf-8")
+    return {**track_info, "image_bytes": b64encode(image_bytes.read())}
 
 
-def get_tracks(user):
-    """Get track info
+class TrackInfo(TypedDict):
+    track_name: str
+    artists: str
+    remaining_time: int
 
-    Args:
-        user (str): User to get track info for
 
-    Returns:
-        str: track name
-        str: artists, joined with ", "
-        int: ms_remaining
-    """
-    spotify, auth_manager = spotify_obj(user)
+@app.get("/user/{user}/track")
+def get_tracks(user: str, request: Request) -> TrackInfo:
+    """Get track info (name, artists, time remaining)"""
+    spotify, _ = spotify_obj(user, base_url=request.base_url)
     track = spotify.current_user_playing_track()
 
     if track is None or track["is_playing"] is False:
         # when not playing, return no data
-        return "nothing playing", "", DEFAULT_WAIT_TIME
+        return {
+            "track_name": "nothing playing",
+            "artists": "",
+            "remaining_time": DEFAULT_WAIT_TIME,
+        }
 
     # get some info
     artists = []
@@ -191,109 +120,82 @@ def get_tracks(user):
     artists = ", ".join(artists)
 
     track_name = track["item"]["name"]
-    remaining_time = track["item"]["duration_ms"] - track["progress_ms"]
+    remaining_time: int = track["item"]["duration_ms"] - track["progress_ms"]
 
-    return track_name, artists, remaining_time
-
-
-@app.route("/user/<user>/track")
-def get_tracks_endpoint(user):
-    """Endpoint for getting track info
-
-    Args:
-        user (str): User to get art for
-
-    Returns:
-        Response: track_name, artists, remaining_time separated with newlines
-    """
-    track_name, artists, remaining_time = get_tracks(user)
-    return_string = f"{track_name}\n{artists}\n{remaining_time}"
-    return Response(return_string, content_type="text/plain; charset=utf-8")
+    return {
+        "track_name": track_name,
+        "artists": artists,
+        "remaining_time": remaining_time,
+    }
 
 
-def get_album_art(user, mode=DEFAULT_IMAGE_MODE):
-    """Generate album art in `mode`
-
-    Args:
-        user (str): User to get art for
-        mode (int, optional): 565/888. Defaults to DEFAULT_IMAGE_MODE.
-
-    Returns:
-        list: list of bytes
-        int: 565/888 mode
-    """
+def _art_helper(user: str, request: Request) -> BytesIO:
     # parse the image returned by the api
-    spotify, auth_manager = spotify_obj(user)
+    spotify, _ = spotify_obj(user, base_url=request.base_url)
     track = spotify.current_user_playing_track()
 
-    multiplier = 3 if mode == 888 else 2
-    if track is None or track["is_playing"] is False:
-        return [0] * (IMG_DIM * IMG_DIM) * multiplier, mode
+    data = bytearray((0, 0, 0) * (IMG_WIDTH * IMG_WIDTH))
+    img = Image.frombuffer(mode="RGB", size=(64, 64), data=data)
+    img_colors = 1
 
-    images = track["item"]["album"]["images"]
-    # figure out which image to render
-    # there's usually a 64x64 image...I think
-    image_to_render = None
-    for image in images:
-        # pick the image with a dimension that matches
-        # probably a better way to do this...like resizing the closest image
-        if image["height"] == IMG_DIM or image["width"] == IMG_DIM:
-            image_to_render = image["url"]
-    # convert the image to a set of pixels
-    if mode == 565:
-        return image_to_565(image_to_render)
-    return image_to_888(image_to_render)
+    if track and track["is_playing"]:
+        images = track["item"]["album"]["images"]
+
+        # figure out which image to render
+        # there's usually a 64x64 image?
+        for image in images:
+            # pick the image with a dimension that matches
+            # probably a better way to do this, like resizing the closest image
+            if image["height"] == IMG_WIDTH or image["width"] == IMG_WIDTH:
+                img = image_fetch(image["url"])
+                # reduce brightness by 50% because LEDs are bright
+                img = ImageEnhance.Brightness(image=img).enhance(0.5)
+                # not too many colors, because clients don't have a lot of
+                # memory.
+                # TODO: make this a query param.
+                img_colors=127
+
+    img = img.convert("P", palette=Image.Palette.ADAPTIVE, colors=img_colors)
+    buffer = BytesIO()
+    # png offers some compression, which may help with a client's low memory.
+    img.save(fp=buffer, format="png")
+    buffer.seek(0)
+    return buffer
+
+@app.get(
+    "/user/{user}/art",
+    responses={200: {"content": {"image/png": {}}}},
+    response_class=Response,
+)
+def get_art(
+    user: str,
+    request: Request,
+) -> Response:
+    """Endpoint for getting album art"""
+    buffer = _art_helper(user=user, request=request)
+    return Response(content=buffer.read())
 
 
-@app.route("/user/<user>/art")
-def get_art_endpoint(user):
-    """Endpoint for getting album art.
-
-    Args:
-        user (str): User to get art for
-
-    Returns:
-        Response: streamed pixel data?
-    """
-    mode = int(request.args.get("mode", default=DEFAULT_IMAGE_MODE))
-    image_bytes, mode = get_album_art(user, mode)
-
-    def generate():
-        for byte in image_bytes:
-            yield bytes([byte])
-
-    return Response(
-        generate(),
-        mimetype="text/plain",
-        headers={"Content-Length": str(len(image_bytes))},
-    )
-
-
-@app.route("/user/<user>/logout")
-def logout(user):
-    """Logs a user out
-
-    Args:
-        user (str): user to log out
-
-    Returns:
-        redirect: if logout successful, redirect to `/`
-    """
+@app.get("/user/{user}/logout")
+def logout(user: str):
+    """Logs a user out by deleting spotify auth data from the server"""
     shutil.rmtree(session_cache_path(user))
-    return redirect("/")
+    return RedirectResponse("/")
 
 
-@app.route("/callback")
-def callback():
-    """Dedicated callback handler, because spotify can't
+@app.get("/callback")
+def callback(
+    user: Annotated[str, Query()],
+    code: Annotated[str, Query()],
+    request: Request,
+):
+    """Save authorization code from user approval"""
 
-    Returns:
-        redirect: redirect back to `/auth/user`
-    """
-    user = request.args.get("state")
-    spotify_code = request.args.get("code")
-    return redirect(url_for("auth", user=user, spotify_code=spotify_code))
+    # trade the code for an access token and save the token to disk
+    _, auth_manager = spotify_obj(user, base_url=request.base_url)
+    if code:
+        auth_manager.get_access_token(code)
 
-
-if __name__ == "__main__":
-    app.run(threaded=True, port=int(os.getenv("PORT", 5000)), host="0.0.0.0")
+    # redirect back to the main user URL
+    # TODO: redirect to where the user initially tried to go to
+    return RedirectResponse(app.url_path_for("user", user=user))

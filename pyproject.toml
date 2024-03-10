@@ -1,0 +1,41 @@
+[project]
+name = "esp8266-nowplaying"
+description = "Spotify album art on a 64x64 LED matrix"
+authors = [{ name = "Nick Yang", email = "guppy0130@users.noreply.github.com" }]
+dynamic = ["version", "readme"]
+requires-python = ">=3.11"
+dependencies = [
+  "spotipy==2.23.0",
+  "fastapi==0.110.0",
+  "Pillow==10.2.0",
+  "hypercorn==0.16.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "black>=22.12.0",
+  "flake8>=6.0.0",
+  "pre-commit>=2.20.0",
+  "isort>=5.11.3",
+  "flake8-bugbear>=22.12.6",
+  "flake8-comprehensions>=3.10.1",
+  "flake8-simplify>=0.19.3",
+  "flake8-builtins>=2.0.1",
+]
+
+[build-system]
+requires = ["setuptools", "setuptools_scm[toml]"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+[tool.black]
+line-length = 79
+
+[tool.setuptools_scm]
