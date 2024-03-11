@@ -1,5 +1,6 @@
 import gc
 import os
+import rtc
 import time
 from io import BytesIO
 
@@ -18,7 +19,7 @@ from watchdog import WatchDogMode
 
 displayio.release_displays()
 
-url = f"http://{os.getenv('SERVER_URL', 'esp8266-nowplaying.k3s.home')}/user/{os.getenv('SPOTIFY_USERNAME')}/art"
+url = f"http://{os.getenv('SERVER_URL')}/user/{os.getenv('SPOTIFY_USERNAME')}/art"
 
 matrix = rgbmatrix.RGBMatrix(
     width=64,
@@ -67,6 +68,21 @@ wifi.debug = True
 wifi.connect()
 print(wifi.ip_address(), wifi.ssid, wifi.signal_strength())
 
+# handling RTC. reasoning for the while/suppress:
+# https://github.com/adafruit/Adafruit_CircuitPython_ESP32SPI/pull/73
+# just leave this in UTC for now.
+# don't really want to connect to adafruit web server just for clock info.
+# TODO: figure out how to do DST/timezones.
+has_rtc = False
+while not has_rtc:
+    print("Trying RTC")
+    try:
+        t = esp.get_time()
+        rtc.RTC().datetime = time.localtime(t[0])
+        has_rtc = True
+    except OSError:
+        time.sleep(1)
+
 if watchdog is not None:
     watchdog.timeout = 15  # miss up to three
     watchdog.mode = WatchDogMode.RESET
@@ -75,6 +91,7 @@ while True:
     gc.collect()
 
     try:
+        print(time.localtime())
         resp = wifi.get(url=url)
         bytes_img = BytesIO(resp.content)
         image, palette = adafruit_imageload.load(bytes_img)
